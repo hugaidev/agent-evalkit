@@ -38,6 +38,7 @@ class Trace(BaseModel):
     agent: str = "unknown"
     model: str = ""
     prompt_hash: str = ""
+    input_hash: str = ""  # hash of the case input this trace answered (stale-trace guard)
     final_output: str = ""
     tool_calls: list[ToolCall] = Field(default_factory=list)
     usage: Usage = Field(default_factory=Usage)

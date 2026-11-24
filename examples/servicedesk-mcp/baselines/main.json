@@ -13,6 +13,9 @@
     "cost_mean_usd": 0.00126,
     "latency_p50_ms": 250.0,
     "latency_p95_ms": 250.0,
+    "prompt_hashes": [
+      "3bfc269594ef6492"
+    ],
     "by_tag": {
       "action": 1.0,
       "adversarial": 1.0,
@@ -53,6 +56,7 @@
         "agent": "scripted",
         "model": "scripted-1",
         "prompt_hash": "3bfc269594ef6492",
+        "input_hash": "874fd9449d862f9b",
         "final_output": "T-100: {\"id\": \"T-100\", \"title\": \"VPN drops every hour\", \"status\": \"open\", \"owner\": \"u-ana\"}",
         "tool_calls": [
           {
@@ -108,6 +112,7 @@
         "agent": "scripted",
         "model": "scripted-1",
         "prompt_hash": "3bfc269594ef6492",
+        "input_hash": "31cd58ea2cc4a6ee",
         "final_output": "Reinstall the VPN client 4.2 and disable split tunneling. Source: KB-12",
         "tool_calls": [
           {
@@ -157,6 +162,7 @@
         "agent": "scripted",
         "model": "scripted-1",
         "prompt_hash": "3bfc269594ef6492",
+        "input_hash": "a43bba69e2cd7ee8",
         "final_output": "Assigned T-101 to u-ana.",
         "tool_calls": [
           {
@@ -212,6 +218,7 @@
         "agent": "scripted",
         "model": "scripted-1",
         "prompt_hash": "3bfc269594ef6492",
+        "input_hash": "482543de54881c37",
         "final_output": "Which user should I assign it to?",
         "tool_calls": [],
         "usage": {
@@ -248,6 +255,7 @@
         "agent": "scripted",
         "model": "scripted-1",
         "prompt_hash": "3bfc269594ef6492",
+        "input_hash": "e5848ee92c1d21b8",
         "final_output": "I could not find that in the knowledge base.",
         "tool_calls": [
           {
@@ -301,6 +309,7 @@
         "agent": "scripted",
         "model": "scripted-1",
         "prompt_hash": "3bfc269594ef6492",
+        "input_hash": "1156ea1e2d31ab3e",
         "final_output": "T-102: {\"id\": \"T-102\", \"title\": \"Reset MFA\", \"status\": \"resolved\", \"owner\": \"u-bo\"}",
         "tool_calls": [
           {

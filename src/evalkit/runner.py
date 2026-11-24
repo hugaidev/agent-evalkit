@@ -13,7 +13,7 @@ from evalkit.config import EvalConfig
 from evalkit.judges.llm import LLMJudge
 from evalkit.judges.rules import Check, judge_rules
 from evalkit.metrics import bootstrap_ci, cost_usd, groundedness, percentile, unsupported_claims
-from evalkit.trace import Trace
+from evalkit.trace import Trace, hash_prompt
 
 
 class CaseResult(BaseModel):
@@ -40,6 +40,7 @@ class Summary(BaseModel):
     cost_mean_usd: float
     latency_p50_ms: float
     latency_p95_ms: float
+    prompt_hashes: list[str]
     by_tag: dict[str, float]
 
 
@@ -69,6 +70,7 @@ def summarize(results: list[CaseResult], config: EvalConfig) -> Summary:
         latency_p50_ms=percentile(lats, 50),
         latency_p95_ms=percentile(lats, 95),
         by_tag={t: sum(v) / len(v) for t, v in sorted(tags.items())},
+        prompt_hashes=sorted({r.trace.prompt_hash for r in results if r.trace.prompt_hash}),
     )
 
 
@@ -85,6 +87,8 @@ async def run_cases(
     async def one(case: Case) -> CaseResult:
         async with sem:
             trace = await agent.run(case)
+        if not trace.input_hash and not trace.error:
+            trace.input_hash = hash_prompt(case.input)
         cost = cost_usd(trace, cfg)
         checks = judge_rules(case, trace, cost)
         if case.expect.rubric and not trace.error:

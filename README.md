@@ -5,8 +5,8 @@ Open source eval harness for MCP agents, with regression gates in CI.
 > Changed a prompt or a model and don't know what you broke? Put your expectations in YAML gold
 > sets, run them against your agent, and fail the build when behavior regresses.
 
-**Status: milestones 1-4 (runner, metrics, calibrated LLM judge, CI gate).** Deterministic
-replay hardening, PyPI release and the dashboard are next; see the roadmap below.
+**Status: milestones 1-5 (runner, metrics, calibrated judge, CI gate, deterministic replay).**
+The Claude Code skill/subagent, dashboard and PyPI release are next; see the roadmap below.
 
 ## Quick start
 
@@ -27,7 +27,8 @@ An agent is any program that reads a case as JSON on stdin and prints a trace as
 2. Metrics: task success, groundedness, cost, latency (done)
 3. LLM judge + calibration against human labels with Cohen's kappa (done; needs your 50 labels)
 4. CI gate comparing prompt versions (done)
-5. Deterministic replay in CI, PyPI release, regression dashboard
+5. Deterministic replay: traces, stale-trace guard, tool cassettes (done)
+6. Claude Code skill and subagent, regression dashboard, PyPI release
 
 MIT licensed.
 
@@ -70,3 +71,15 @@ McNemar test is significant, `significance_alpha`), a groundedness drop, cost or
 increases, missing baseline cases, and (optionally) an uncalibrated judge. Thresholds live under
 `gate:` in `evalkit.yaml`. `.github/workflows/eval-gate.yml` runs this on pull requests with no
 API key and comments the markdown report on the PR; `eval-live.yml` is the manual/nightly live run.
+
+## Deterministic replay
+
+- **Trace replay** (`--replay`): the agent does not run; recorded traces are judged again. Reports
+  are byte-identical across runs. Traces store a hash of the case input, so editing a case makes its
+  trace *stale* and the case fails with "re-record" instead of silently judging old behavior.
+- **Tool cassettes** (`evalkit cassette traces.jsonl --out cassette.json`): run a *changed* agent
+  for real while tool results come from the recording, so only the agent varies. An agent that
+  makes a tool call that was never recorded aborts that case with `unrecorded tool call`.
+  The example agent reads `EVALKIT_CASSETTE`; see `evalkit.replay.Cassette` for your own agent.
+- **Prompt drift**: traces carry a prompt hash; the gate report notes when baseline and candidate
+  prompts differ.

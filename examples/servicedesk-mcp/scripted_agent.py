@@ -11,14 +11,23 @@ import json
 import os
 import re
 import sys
+from pathlib import Path
 
 from tools import TOOLS
 
+from evalkit.replay import Cassette, MissingRecording
 from evalkit.trace import ToolCall, Trace, Usage, hash_prompt
 
 
 def call(trace: Trace, name: str, **arguments: str) -> object:
-    result = TOOLS[name](**arguments)
+    cassette = os.environ.get("EVALKIT_CASSETTE")
+    if cassette:  # tools answer from a recording; unrecorded calls abort the run
+        try:
+            result = Cassette.load(Path(cassette)).call(name, arguments)
+        except MissingRecording as exc:
+            sys.exit(f"{exc}")
+    else:
+        result = TOOLS[name](**arguments)
     trace.tool_calls.append(ToolCall(name=name, arguments=arguments, result=result))
     return result
 

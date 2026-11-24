@@ -22,8 +22,9 @@ from evalkit.config import load_config
 from evalkit.gate import evaluate, render_markdown
 from evalkit.judges.clients import make_client
 from evalkit.judges.llm import LLMJudge, load_rubric
+from evalkit.replay import Cassette
 from evalkit.runner import run_cases
-from evalkit.trace import write_traces
+from evalkit.trace import read_traces, write_traces
 
 
 def _build_agent(args: argparse.Namespace) -> Agent:
@@ -108,6 +109,13 @@ def _cmd_calibrate(args: argparse.Namespace) -> int:
     return 0 if report.calibrated else 1
 
 
+def _cmd_cassette(args: argparse.Namespace) -> int:
+    cassette = Cassette.from_traces(list(read_traces(Path(args.traces)).values()))
+    cassette.save(Path(args.out))
+    print(f"cassette: {len(cassette)} recorded tool calls -> {args.out}")
+    return 0
+
+
 def _cmd_compare(args: argparse.Namespace) -> int:
     cmp = compare(load_run(Path(args.baseline)), load_run(Path(args.candidate)))
     print(f"regressed={cmp.regressed or '-'} fixed={cmp.fixed or '-'} p={cmp.p_value:.3f}")
@@ -188,6 +196,11 @@ def main(argv: list[str] | None = None) -> int:
         sys.stdout.reconfigure(
             encoding="utf-8"
         )  # reports contain emoji; Windows defaults to cp1252
+    k = sub.add_parser("cassette", help="build a tool cassette from recorded traces")
+    k.add_argument("traces", help="traces JSONL (from `run --record`)")
+    k.add_argument("--out", required=True)
+    k.set_defaults(fn=_cmd_cassette)
+
     args = p.parse_args(argv)
     try:
         return int(args.fn(args))

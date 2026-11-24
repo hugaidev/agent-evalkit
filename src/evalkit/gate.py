@@ -92,6 +92,12 @@ def render_markdown(cmp: Comparison, result: GateResult, title: str = "evalkit g
     lines += ["", "| Metric | Baseline | Candidate |", "|---|---|---|"]
     for key in cmp.baseline:
         lines.append(f"| {key} | {cmp.baseline[key]:.4g} | {cmp.candidate[key]:.4g} |")
+    if cmp.baseline_prompts != cmp.candidate_prompts:
+        lines += [
+            "",
+            f"**Prompt changed:** `{', '.join(cmp.baseline_prompts) or '?'}` → "
+            f"`{', '.join(cmp.candidate_prompts) or '?'}`",
+        ]
     if cmp.regressed:
         lines += ["", f"**Regressed cases:** {', '.join(cmp.regressed)}"]
     if cmp.fixed:

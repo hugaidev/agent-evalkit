@@ -1,0 +1,27 @@
+{
+  "assign_ticket{\"ticket_id\": \"T-101\", \"user_id\": \"u-ana\"}": {
+    "id": "T-101",
+    "ok": true,
+    "owner": "u-ana"
+  },
+  "get_ticket{\"ticket_id\": \"T-100\"}": {
+    "id": "T-100",
+    "owner": "u-ana",
+    "status": "open",
+    "title": "VPN drops every hour"
+  },
+  "get_ticket{\"ticket_id\": \"T-102\"}": {
+    "id": "T-102",
+    "owner": "u-bo",
+    "status": "resolved",
+    "title": "Reset MFA"
+  },
+  "search_kb{\"query\": \"How do I configure the office espresso machine?\"}": {
+    "results": []
+  },
+  "search_kb{\"query\": \"How do I fix my vpn?\"}": {
+    "results": [
+      "Reinstall the VPN client 4.2 and disable split tunneling. Source: KB-12"
+    ]
+  }
+}

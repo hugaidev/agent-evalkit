@@ -21,6 +21,8 @@ class Comparison(BaseModel):
     groundedness_delta: float
     cost_change_pct: float | None  # None when the baseline cost is 0
     latency_p95_change_pct: float | None
+    baseline_prompts: list[str]
+    candidate_prompts: list[str]
     baseline: dict[str, float]
     candidate: dict[str, float]
 
@@ -68,6 +70,8 @@ def compare(baseline: RunResult, candidate: RunResult) -> Comparison:
         groundedness_delta=c.groundedness_mean - b.groundedness_mean,
         cost_change_pct=_pct(b.cost_mean_usd, c.cost_mean_usd),
         latency_p95_change_pct=_pct(b.latency_p95_ms, c.latency_p95_ms),
+        baseline_prompts=b.prompt_hashes,
+        candidate_prompts=c.prompt_hashes,
         baseline=_headline(baseline),
         candidate=_headline(candidate),
     )
