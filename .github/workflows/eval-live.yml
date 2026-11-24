@@ -1,0 +1,53 @@
+name: eval-live
+
+# Runs your real agent and the Anthropic judge. Manual or nightly; costs money, so not on PRs.
+on:
+  workflow_dispatch:
+    inputs:
+      agent_command:
+        description: Agent command (case JSON on stdin, trace JSON on stdout)
+        required: true
+        default: python examples/servicedesk-mcp/scripted_agent.py
+      judge_model:
+        description: Judge model id
+        required: true
+  schedule:
+    - cron: "0 6 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  live:
+    # Nightly runs only when the repo opts in via the EVAL_LIVE_ENABLED variable.
+    if: github.event_name == 'workflow_dispatch' || vars.EVAL_LIVE_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      EXAMPLE: examples/servicedesk-mcp
+      AGENT_COMMAND: ${{ inputs.agent_command || 'python examples/servicedesk-mcp/scripted_agent.py' }}
+      JUDGE_MODEL: ${{ inputs.judge_model || vars.EVAL_JUDGE_MODEL }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+      - run: uv sync --all-extras --frozen
+      - name: Run live
+        run: |
+          uv run evalkit run $EXAMPLE/cases --config $EXAMPLE/evalkit.yaml \
+            --command "$AGENT_COMMAND" \
+            --rubric $EXAMPLE/rubrics/helpfulness.yaml --judge anthropic \
+            --judge-model "$JUDGE_MODEL" \
+            --record runs/live.jsonl --out runs/live.json --allow-failures
+      - name: Gate against baseline
+        run: uv run evalkit gate $EXAMPLE/baselines/main.json runs/live.json --config $EXAMPLE/evalkit.yaml --markdown gate.md
+      - name: Job summary
+        if: always()
+        run: cat gate.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: eval-live
+          path: |
+            runs/
+            gate.md

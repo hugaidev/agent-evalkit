@@ -1,0 +1,58 @@
+name: eval-gate
+
+# Offline and deterministic: replays recorded traces, needs no API key (safe for fork PRs).
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: eval-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  EXAMPLE: examples/servicedesk-mcp
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+      - name: Replay candidate traces
+        run: |
+          uv run evalkit run $EXAMPLE/cases \
+            --config $EXAMPLE/evalkit.yaml \
+            --replay $EXAMPLE/traces/candidate.jsonl \
+            --out runs/candidate.json --allow-failures
+      - name: Gate against baseline
+        id: gate
+        continue-on-error: true
+        run: |
+          uv run evalkit gate $EXAMPLE/baselines/main.json runs/candidate.json \
+            --config $EXAMPLE/evalkit.yaml --markdown gate.md
+      - name: Job summary
+        if: always()
+        run: cat gate.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Comment on the PR (same-repo PRs only; forks get the job summary)
+        if: always() && github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr comment "${{ github.event.pull_request.number }}" --body-file gate.md --edit-last --create-if-none
+      - name: Keep run result as an artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: eval-gate
+          path: |
+            runs/
+            gate.md
+      - name: Fail the check on regression
+        if: steps.gate.outcome == 'failure'
+        run: exit 1

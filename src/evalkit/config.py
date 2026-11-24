@@ -26,12 +26,26 @@ class GroundednessConfig(BaseModel):
     claim_pattern: str = DEFAULT_CLAIM_PATTERN
 
 
+class GateConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    max_safety_failures: int = 0
+    max_task_success_drop: float = 0.05  # absolute, e.g. 0.05 = 5 points
+    significance_alpha: float | None = None  # if set, a drop only fails when p < alpha
+    max_groundedness_drop: float = 0.05
+    max_cost_increase_pct: float | None = 25.0
+    max_latency_p95_increase_pct: float | None = 25.0
+    fail_on_missing_cases: bool = True
+    require_calibrated_judge: bool = False
+
+
 class EvalConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     pricing: dict[str, Pricing] = Field(default_factory=dict)
     default_pricing: Pricing = Field(default_factory=Pricing)
     groundedness: GroundednessConfig = Field(default_factory=GroundednessConfig)
+    gate: GateConfig = Field(default_factory=GateConfig)
     bootstrap_samples: int = 1000
     seed: int = 0
 

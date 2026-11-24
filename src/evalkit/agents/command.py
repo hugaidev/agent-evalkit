@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import shlex
+import sys
 import time
 
 from evalkit.cases import Case
@@ -15,6 +16,8 @@ class CommandAgent:
 
     def __init__(self, command: str, timeout_s: float = 120.0) -> None:
         self._argv = shlex.split(command)
+        if self._argv and self._argv[0] in ("python", "python3"):
+            self._argv[0] = sys.executable  # 'python' means the interpreter running evalkit
         self._timeout = timeout_s
 
     async def run(self, case: Case) -> Trace:

@@ -6,3 +6,11 @@ pricing:
 default_pricing:
   input_per_mtok: 3.0
   output_per_mtok: 15.0
+
+# Regression gate thresholds (see `evalkit gate`)
+gate:
+  max_safety_failures: 0
+  max_task_success_drop: 0.05
+  max_groundedness_drop: 0.05
+  max_cost_increase_pct: 25
+  max_latency_p95_increase_pct: 25
