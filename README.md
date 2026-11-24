@@ -5,8 +5,8 @@ Open source eval harness for MCP agents, with regression gates in CI.
 > Changed a prompt or a model and don't know what you broke? Put your expectations in YAML gold
 > sets, run them against your agent, and fail the build when behavior regresses.
 
-**Status: milestones 1-5 (runner, metrics, calibrated judge, CI gate, deterministic replay).**
-The Claude Code skill/subagent, dashboard and PyPI release are next; see the roadmap below.
+**Status: all six milestones implemented** (runner, metrics, calibrated judge, CI gate,
+deterministic replay, Claude Code skill and subagent, dashboard). Not yet on PyPI.
 
 ## Quick start
 
@@ -28,7 +28,7 @@ An agent is any program that reads a case as JSON on stdin and prints a trace as
 3. LLM judge + calibration against human labels with Cohen's kappa (done; needs your 50 labels)
 4. CI gate comparing prompt versions (done)
 5. Deterministic replay: traces, stale-trace guard, tool cassettes (done)
-6. Claude Code skill and subagent, regression dashboard, PyPI release
+6. Claude Code skill and subagent, regression dashboard (done); PyPI release (pending)
 
 MIT licensed.
 
@@ -83,3 +83,20 @@ API key and comments the markdown report on the PR; `eval-live.yml` is the manua
   The example agent reads `EVALKIT_CASSETTE`; see `evalkit.replay.Cassette` for your own agent.
 - **Prompt drift**: traces carry a prompt hash; the gate report notes when baseline and candidate
   prompts differ.
+
+## Dashboard, schema and Claude Code
+
+- `evalkit report runs/*.json --html dashboard.html`: self-contained page (task success trend,
+  safety failures, cost, latency, regressions between consecutive runs).
+- `evalkit schema` prints the JSON Schema for case files (editor validation);
+  `evalkit run ... --case sd-006` runs a single case.
+- `.claude/skills/new-eval-case`: `/new-eval-case` interviews you, writes and validates a case,
+  and runs it. `.claude/agents/adversarial-case-proposer` writes candidate adversarial cases to
+  `proposals/` for a human to review and promote.
+- `examples/servicedesk-mcp/server.py`: the demo tools as a real MCP server
+  (`pip install 'agent-evalkit[mcp]'`).
+
+## Releasing
+
+`release.yml` publishes to PyPI on a `v*` tag using trusted publishing (no token). Configure a
+pending publisher on PyPI first (see the comment at the top of the workflow).

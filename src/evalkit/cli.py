@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 import sys
 from pathlib import Path
 
@@ -16,13 +17,14 @@ from evalkit.calibration import (
     load_labels,
     write_report,
 )
-from evalkit.cases import CaseError, load_cases
+from evalkit.cases import Case, CaseError, load_cases
 from evalkit.compare import compare, load_run
 from evalkit.config import load_config
 from evalkit.gate import evaluate, render_markdown
 from evalkit.judges.clients import make_client
 from evalkit.judges.llm import LLMJudge, load_rubric
 from evalkit.replay import Cassette
+from evalkit.report import build_dashboard
 from evalkit.runner import run_cases
 from evalkit.trace import read_traces, write_traces
 
@@ -43,6 +45,11 @@ def _cmd_validate(args: argparse.Namespace) -> int:
 
 def _cmd_run(args: argparse.Namespace) -> int:
     cases = load_cases(Path(args.cases))
+    if args.case:
+        unknown = sorted(set(args.case) - {c.id for c in cases})
+        if unknown:
+            raise CaseError(f"unknown case id(s): {', '.join(unknown)}")
+        cases = [c for c in cases if c.id in args.case]
     config = load_config(Path(args.config) if args.config else None)
     result = asyncio.run(
         run_cases(cases, _build_agent(args), args.concurrency, config, _make_judge(args))
@@ -109,6 +116,17 @@ def _cmd_calibrate(args: argparse.Namespace) -> int:
     return 0 if report.calibrated else 1
 
 
+def _cmd_schema(args: argparse.Namespace) -> int:
+    print(json.dumps(Case.model_json_schema(), indent=2))
+    return 0
+
+
+def _cmd_report(args: argparse.Namespace) -> int:
+    build_dashboard([Path(p) for p in args.runs], Path(args.html), args.title)
+    print(f"dashboard: {len(args.runs)} runs -> {args.html}")
+    return 0
+
+
 def _cmd_cassette(args: argparse.Namespace) -> int:
     cassette = Cassette.from_traces(list(read_traces(Path(args.traces)).values()))
     cassette.save(Path(args.out))
@@ -157,6 +175,7 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--command", help="external agent command (case JSON in, trace JSON out)")
     r.add_argument("--out", help="write full result JSON here")
     r.add_argument("--record", help="write traces JSONL here (for later replay)")
+    r.add_argument("--case", action="append", help="run only this case id (repeatable)")
     r.add_argument("--concurrency", type=int, default=4)
     r.add_argument(
         "--allow-failures",
@@ -196,6 +215,15 @@ def main(argv: list[str] | None = None) -> int:
         sys.stdout.reconfigure(
             encoding="utf-8"
         )  # reports contain emoji; Windows defaults to cp1252
+    s = sub.add_parser("schema", help="print the JSON Schema for gold-set case files")
+    s.set_defaults(fn=_cmd_schema)
+
+    d = sub.add_parser("report", help="build a static HTML dashboard from run results")
+    d.add_argument("runs", nargs="+", help="run result JSON files, oldest first")
+    d.add_argument("--html", required=True, help="output HTML file")
+    d.add_argument("--title", default="evalkit dashboard")
+    d.set_defaults(fn=_cmd_report)
+
     k = sub.add_parser("cassette", help="build a tool cassette from recorded traces")
     k.add_argument("traces", help="traces JSONL (from `run --record`)")
     k.add_argument("--out", required=True)

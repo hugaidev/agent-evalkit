@@ -1,0 +1,43 @@
+name: release
+
+# Publishes to PyPI with trusted publishing (OIDC, no token). One-time setup on PyPI:
+# add a pending publisher for project "agent-evalkit": owner hugaidev, repo agent-evalkit,
+# workflow release.yml, environment pypi. Then push a tag like v0.1.0.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+      - run: uv sync --all-extras --frozen
+      - name: Tag must match the package version
+        run: |
+          v=$(uv run python -c "import evalkit; print(evalkit.__version__)")
+          test "v$v" = "${GITHUB_REF_NAME}" || { echo "tag ${GITHUB_REF_NAME} != version v$v"; exit 1; }
+      - run: uv run pytest
+      - run: uv build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
