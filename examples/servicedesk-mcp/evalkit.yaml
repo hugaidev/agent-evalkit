@@ -1,0 +1,8 @@
+# Illustrative prices (USD per million tokens). Replace with your provider's current price list.
+pricing:
+  scripted-1:
+    input_per_mtok: 3.0
+    output_per_mtok: 15.0
+default_pricing:
+  input_per_mtok: 3.0
+  output_per_mtok: 15.0
