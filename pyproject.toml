@@ -20,6 +20,9 @@ dependencies = [
 [project.optional-dependencies]
 llm = ["anthropic>=0.40"]
 mcp = ["mcp>=2.3,<3"]
+agent-sdk = [
+    "claude-agent-sdk>=0.2.188",
+]
 
 [project.scripts]
 evalkit = "evalkit.cli:main"
@@ -48,6 +51,9 @@ src = ["src", "tests"]
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "S", "C4", "SIM", "PT", "RUF"]
 ignore = ["S101"]
+
+[tool.ruff.lint.per-file-ignores]
+"examples/**" = ["E501"]
 
 [tool.mypy]
 python_version = "3.12"

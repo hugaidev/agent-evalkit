@@ -5,8 +5,8 @@ Open source eval harness for MCP agents, with regression gates in CI.
 > Changed a prompt or a model and don't know what you broke? Put your expectations in YAML gold
 > sets, run them against your agent, and fail the build when behavior regresses.
 
-**Status: milestone 1 (case format + runner).** Metrics, calibrated LLM judge, CI gate and
-deterministic replay of live runs are next; see the roadmap below.
+**Status: milestones 1-3 (runner, metrics, calibrated LLM judge).** CI gate and
+deterministic replay in CI are next; see the roadmap below.
 
 ## Quick start
 
@@ -24,9 +24,32 @@ An agent is any program that reads a case as JSON on stdin and prints a trace as
 ## Roadmap
 
 1. Case format and runner (done)
-2. Metrics: task success, groundedness, cost, latency
-3. LLM judge calibrated against 50 human labels (Cohen's kappa)
+2. Metrics: task success, groundedness, cost, latency (done)
+3. LLM judge + calibration against human labels with Cohen's kappa (done; needs your 50 labels)
 4. CI gate comparing prompt versions
 5. Deterministic replay in CI, PyPI release, regression dashboard
 
 MIT licensed.
+
+## LLM judge and calibration
+
+Judges use a YAML rubric and a pluggable backend, so you can run with or without an API key:
+
+| `--judge` | Needs | Notes |
+|---|---|---|
+| `simulated` | nothing | deterministic heuristic, **not an LLM**; for tests and offline demos |
+| `agent-sdk` | Claude Code login (`pip install 'agent-evalkit[agent-sdk]'`) | real Claude, no API key |
+| `anthropic` | `ANTHROPIC_API_KEY` + `--judge-model` (`[llm]` extra) | direct API |
+
+Calibrate before trusting a judge: label the 50 items in
+`examples/servicedesk-mcp/calibration/` (copy `labels.template.csv` to `labels.csv`, fill `label`
+with `pass|fail`), then:
+
+```bash
+uv run evalkit calibrate --items examples/servicedesk-mcp/calibration/items.jsonl \
+  --labels examples/servicedesk-mcp/calibration/labels.csv \
+  --rubric examples/servicedesk-mcp/rubrics/helpfulness.yaml --judge agent-sdk
+```
+
+It prints Cohen's kappa, accuracy and every disagreement, and exits non-zero below `--min-kappa`
+(default 0.6).

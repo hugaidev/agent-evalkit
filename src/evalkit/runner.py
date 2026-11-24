@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from evalkit.agents.base import Agent
 from evalkit.cases import Case
 from evalkit.config import EvalConfig
+from evalkit.judges.llm import LLMJudge
 from evalkit.judges.rules import Check, judge_rules
 from evalkit.metrics import bootstrap_ci, cost_usd, groundedness, percentile, unsupported_claims
 from evalkit.trace import Trace
@@ -72,7 +73,11 @@ def summarize(results: list[CaseResult], config: EvalConfig) -> Summary:
 
 
 async def run_cases(
-    cases: list[Case], agent: Agent, concurrency: int = 4, config: EvalConfig | None = None
+    cases: list[Case],
+    agent: Agent,
+    concurrency: int = 4,
+    config: EvalConfig | None = None,
+    judge: LLMJudge | None = None,
 ) -> RunResult:
     cfg = config or EvalConfig()
     sem = asyncio.Semaphore(concurrency)
@@ -82,6 +87,20 @@ async def run_cases(
             trace = await agent.run(case)
         cost = cost_usd(trace, cfg)
         checks = judge_rules(case, trace, cost)
+        if case.expect.rubric and not trace.error:
+            if judge is None:
+                checks.append(
+                    Check(name=f"rubric:{case.expect.rubric}", passed=False, detail="no judge")
+                )
+            else:
+                v = await judge.judge_trace(case, trace)
+                checks.append(
+                    Check(
+                        name=f"rubric:{judge.rubric.name}",
+                        passed=v.verdict == "pass",
+                        detail=v.reasoning,
+                    )
+                )
         return CaseResult(
             case_id=case.id,
             tags=case.tags,
